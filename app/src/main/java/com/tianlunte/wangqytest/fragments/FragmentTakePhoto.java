@@ -4,7 +4,10 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -21,6 +24,7 @@ import com.tianlunte.wangqytest.models.WCameraWrapper;
 import com.tianlunte.wangqytest.utils.CommUtils;
 import com.tianlunte.wangqytest.utils.LocalCameraUtils;
 import com.tianlunte.wangqytest.views.MyCameraPreView;
+import com.tianlunte.wangqytest.views.TouchableImageView;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -28,14 +32,17 @@ import java.util.List;
 /**
  * Created by wangqingyun on 5/17/16.
  */
-public class FragmentTakePhoto extends Fragment implements View.OnClickListener {
+public class FragmentTakePhoto extends Fragment implements View.OnClickListener, TouchableImageView.ITouchableImageViewDelegate {
 
     private MyCameraPreView mCameraPreView;
     private WCameraWrapper mCameraWrapper;
 
-    private ImageView mResultPicView;
+    private TouchableImageView mResultPicView;
 
     private Bitmap mBitmap;
+    private Canvas mCanvas;
+    private Paint mPaint;
+    private Path mPath;
     private Button mBtnSendPic;
 
     @Override
@@ -46,10 +53,16 @@ public class FragmentTakePhoto extends Fragment implements View.OnClickListener 
 
         rootView.findViewById(R.id.take_photo_btn_take).setOnClickListener(this);
 
-        mResultPicView = (ImageView)rootView.findViewById(R.id.take_photo_result_pic);
+        mResultPicView = (TouchableImageView)rootView.findViewById(R.id.take_photo_result_pic);
+        mResultPicView.setupDelegate(this);
 
         mBtnSendPic = (Button)rootView.findViewById(R.id.take_photo_send_photo);
         mBtnSendPic.setOnClickListener(this);
+
+        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeWidth(5);
+        mPaint.setColor(Color.parseColor("#ffff00"));
 
         return rootView;
     }
@@ -65,6 +78,24 @@ public class FragmentTakePhoto extends Fragment implements View.OnClickListener 
                 ((MainActivity)getActivity()).sendImageMessage(mBitmap);
             }
             break;
+        }
+    }
+
+    @Override
+    public void onEventDown(float x, float y) {
+        if(mCanvas != null) {
+            mPath = new Path();
+            mPath.moveTo(x * mBitmap.getWidth(), y * mBitmap.getHeight());
+        }
+    }
+
+    @Override
+    public void onEventMove(float x, float y) {
+        if(mCanvas != null) {
+            mPath.lineTo(x * mBitmap.getWidth(), y * mBitmap.getHeight());
+
+            mCanvas.drawPath(mPath, mPaint);
+            mResultPicView.setImageBitmap(mBitmap);
         }
     }
 
@@ -171,7 +202,10 @@ public class FragmentTakePhoto extends Fragment implements View.OnClickListener 
                     mCameraPreView.getHeight(),
                     false, getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
 
-            mBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+            Bitmap bm = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+            mBitmap = bm.copy(Bitmap.Config.ARGB_8888, true);
+            mCanvas = new Canvas(mBitmap);
             //bm = getHorizontalReversePhoto(bm);
 
             mResultPicView.setVisibility(View.VISIBLE);
