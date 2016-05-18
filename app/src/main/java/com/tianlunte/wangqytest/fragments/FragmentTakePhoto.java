@@ -45,6 +45,8 @@ public class FragmentTakePhoto extends Fragment implements View.OnClickListener,
     private Path mPath;
     private Button mBtnSendPic;
 
+    // eraser : xFermode or Paint.Shader
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_take_photo, container, false);
